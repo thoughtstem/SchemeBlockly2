@@ -1,0 +1,51 @@
+
+Refactor into NPM / React / Elm / Purescript...
+  > Make data representation for workspace (function defs with types)
+    > Block data structure
+  > Function to take a workspace definition and a parsed lisp program and return a blockly xml 
+  > Function to take a blockly xml and return a parsed lisp program??
+    > Just get rid of Blockly's compiler and just use Blockly for its UI 
+    > Ooooor... use PureScript to generate Blockly JavaScript to define compiler?
+
+
+
+
+
+collapsable blockly blocks
+  > Factor functions into different "files"  Or otherwise be able to hide things...
+
+saving/loading code
+
+bug: mutating disconnects blocks
+
+bug: extra scheme inputs not passed to javascript function
+
+make prettier layout
+
+auto code-tidying in text editor
+  folding
+
+more htdp functions implemented
+  > Be able to switch between function defs and implementations...
+
+figure out animation framework
+
+type inference
+  polymorphic blocks
+
+catch infinite loops in live coding
+
+auto-generate problems.
+Auto-generate code.
+
+
+Bigger goals:
+
+* Work with WeScheme people?  Grant?
+  * Make Scratch clone
+  * Make new curriculum for kids
+
+* Integrate with CodeSpells
+* Integrate with LearnToMod
+* Integrate with Vox-L
+

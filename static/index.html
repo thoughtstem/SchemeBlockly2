@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Blockly Demo: Scheme</title>
+  <script src="https://codemirror.net/lib/codemirror.js"></script>
+  <script src="https://codemirror.net/2/mode/scheme/scheme.js"></script>
+  <link rel="stylesheet" href="https://codemirror.net/lib/codemirror.css">
+
+  <script src="http://www.biwascheme.org/release/biwascheme-min.js"></script>
+  <script src="http://fabricjs.com/lib/fabric_static.js"></script>
+  <script src="https://www.google.com/jsapi"></script>
+  <script src="/blockly/blockly_compressed.js"></script>
+  <script src="/blockly/blocks_compressed.js"></script>
+  <script src="/blockly/javascript_compressed.js"></script>
+  <script src="/blockly/msg/js/en.js"></script>
+
+  </script>
+  <style>
+    body {
+      background-color: #fff;
+      font-family: sans-serif;
+    }
+    h1 {
+      font-weight: normal;
+      font-size: 140%;
+    }
+    #funcText {
+      margin-top: 1em;
+      margin-left: 1.5em;
+      font-family: sans-serif;
+    }
+    #funcText>img {
+      height: 3px;
+      width: 15px;
+      vertical-align: middle;
+      margin-right: .5em;
+    }
+    #y1 {
+      background-color: #36c;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app"></div>
+  <script src="/dist/bundle.js"></script>
+
+  <div id="blocklyDiv" style="height: 700px;float:left;"></div>
+  <!--  <textarea style="float:left" id="scheme" style="width: 400px; border: 1px solid black;"></textarea> -->
+
+  <button onClick="doEval()">run</button>
+  <canvas id="output" width=400 height=400 style="float: left; border: 1px solid black;"></canvas>
+
+  <xml id="toolbox" style="display: none">
+    <category name="Atomic">
+      <block type="raw"></block>
+      <block type="logic_boolean"></block>
+      <block type="math_number"></block>
+      <block type="text"></block>
+    </category>
+
+    <category id="functions_tab" name="Functions">
+      <category id="outputting_functions_tab" name="Outputting">
+      </category>
+      <category id="inputting_functions_tab" name="Inputting">
+      </category>
+    </category>
+  </xml>
+  <script>
+
+    /*
+
+  var editor = CodeMirror.fromTextArea(document.getElementById("scheme"), {
+    value: "(hello 'world')",
+    mode:  "scheme"
+  });
+
+  editor.on("change", function(cm){
+    if(!editor.hasFocus()) return
+
+    var text = "(prog " + cm.getValue().replace(/  /, " ").replace(/;.*\n/g,"") +")"
+    var tree = parseScheme(text)
+
+    var blocks = tree.slice(1).map(function(t){
+      return treeToXml(t)
+    })
+
+    var xml = "<xml>"+blocks+"</xml>"
+
+    var dom = Blockly.Xml.textToDom(xml)
+
+    Scheme.workspace.clear()
+    Blockly.Xml.domToWorkspace(dom, Scheme.workspace)
+    Scheme.workspace.cleanUp()
+
+    doEval()
+  })
+
+  function tokenize(input) {
+     return input
+           .replace(/\(/g, ' ( ')
+           .replace(/\)/g, ' ) ')
+           .trim()
+           .split(/\s+/);
+  }
+
+  function parenthesize(input, list) {
+     if (list === undefined) {
+       return parenthesize(input, []);
+    } else {
+       var token = input.shift();
+
+       if (token === undefined) {
+         return list.pop();
+       } else if (token === "(") {
+         list.push(parenthesize(input, []));
+         return parenthesize(input, list);
+       } else if (token === ")") {
+         return list;
+       } else {
+         return parenthesize(input, list.concat(categorize(token)));
+       }
+    }
+  }
+
+   var categorize = function(input) {
+     if (!isNaN(parseFloat(input))) {
+       return { type:'literal', value: parseFloat(input) };
+     } else if (input[0] === '"' && input.slice(-1) === '"') {
+       return { type:'literal', value: input.slice(1, -1) };
+     } else {
+       return { type:'identifier', value: input };
+     }
+   }
+
+  function parseScheme(text){
+    var t = tokenize(text) 
+    //console.log(t)
+    var p = parenthesize(t)
+    //console.log(p)
+ 
+    return p
+  }
+
+  function treeToXml(tree){
+    if(tree.length > 1){
+      var ret= '<block type="'+blockNameFromOperator(tree[0].value)+'"><mutation items="'+(tree.length-1)+'"></mutation><field name="NAME">'+(tree[0].value)+'</field>' 
+
+      for(var i in tree.slice(1)){
+        var operand = tree.slice(1)[i]
+
+        ret += '<value name="OPERAND'+i+'">'
+
+        ret += treeToXml(tree.slice(1)[i])
+
+        ret += '</value>'
+      }
+
+      ret += '</block>'
+
+      return ret
+
+    } else if(tree.value !== undefined) {
+      if(typeof(tree.value) == "number" && tree.type == "literal"){
+        return '<block type="math_number"><field name="NUM">'+(tree.value)+'</field></block>' 
+      }else if(typeof(tree.value) == "string" && tree.type == "literal"){
+        return '<block type="text"><field name="TEXT">'+(tree.value)+'</field></block>' 
+      }else if(typeof(tree.value) == "string" && tree.type == "identifier"){
+        return '<block type="raw"><field name="NAME">'+(tree.value)+'</field></block>' 
+      } else {
+        return "???"
+      }
+    }
+  }
+
+  Blockly.Blocks["raw"] = {
+    // x variable getter.
+    init: function() {
+      this.jsonInit(
+        {
+          "type": "block_type",
+          "message0": "%1",
+          "args0": [
+            {
+              "type": "field_input",
+              "name": "NAME",
+              "text": "x"
+            }
+          ],
+          "output": null,
+          "tooltip": "",
+          "helpUrl": ""
+        }
+      );
+    }
+  };
+
+  Blockly.JavaScript['raw'] = function(block) {
+    var text_name = block.getFieldValue('NAME');
+    var code = text_name;
+    return [code, Blockly.JavaScript.ORDER_NONE];
+  };
+
+function colorFromType(s){
+  var types = {"Number": 230, "String": 160, "Image": 290, "Boolean": 210}
+
+  return types[s]
+}
+
+function shadowBlockFromType(s){
+  var types = {
+    "Number": '<shadow type="math_number"></shadow>', 
+    "Boolean": '<shadow type="logic_boolean"></shadow>', 
+    "String": '<shadow type="text"></shadow>', 
+    "Image": '<shadow type="circle"></shadow>'}
+
+  return types[s]
+}
+
+
+function clearFunctionsTabs(){
+    document.getElementById("outputting_functions_tab").innerHTML +=
+        '<category id="number_outputting_functions_tab" name="Number"></category>' +
+        '<category id="string_outputting_functions_tab" name="String"> </category>'+
+        '<category id="boolean_outputting_functions_tab" name="Boolean"> </category>'+
+        '<category id="image_outputting_functions_tab" name="Image"> </category>'+
+        '<category id="other_outputting_functions_tab" name="Other"> </category>'
+
+    document.getElementById("inputting_functions_tab").innerHTML += 
+        '<category id="number_inputting_functions_tab" name="Number"></category>' +
+        '<category id="string_inputting_functions_tab" name="String"> </category>'+
+        '<category id="boolean_inputting_functions_tab" name="Boolean"> </category>'+
+        '<category id="image_inputting_functions_tab" name="Image"> </category>'+
+        '<category id="other_inputting_functions_tab" name="Other"> </category>'
+
+}
+
+function setupFromPredicates(predicates){
+  Scheme.predicates = predicates
+
+  clearFunctionsTabs()
+
+  for(var i in predicates){
+    var predicate = predicates[i]
+    makeBlock(predicate)
+  }
+
+  Scheme.init()
+}
+
+
+function makeBlock(predicate){
+
+  var input_shadows = []
+
+
+  if(predicate.inputs){
+    for(var i in predicate.inputs){
+      var input = predicate.inputs[i]
+
+      var shadow = shadowBlockFromType(input)
+
+      if(shadow)
+        input_shadows.push('<value name="OPERAND'+i+'">'+shadow+'</value>')
+
+    }
+  }
+
+  var block = '<block type="'+predicate.name+'">'+input_shadows.join("")+'</block>'
+
+
+  if(predicate.inputs){
+    var done = []
+    for(var i in predicate.inputs){
+      var input = predicate.inputs[i]
+
+      if(input && done.indexOf(input) == -1){
+        document.getElementById(input.toLowerCase()+"_inputting_functions_tab").innerHTML += block 
+        done.push(input)
+      }
+    }
+  }
+
+  if(predicate.output)
+    document.getElementById(predicate.output.toLowerCase()+"_outputting_functions_tab").innerHTML += block
+  else
+    document.getElementById("other_outputting_functions_tab").innerHTML += block
+
+
+
+  Blockly.Blocks[predicate.name] = {
+    // x variable getter.
+    init: function() {
+      this.itemCount_ = predicate.inputs ? predicate.inputs.length : 0
+      this.setMutator(new Blockly.Mutator(['text_create_join_item']));
+
+      if(!predicate.operator){
+        this.appendDummyInput()
+                .appendField(new Blockly.FieldTextInput("default"), "NAME");
+      } else {
+        this.appendDummyInput()
+                .appendField(predicate.operator, "NAME");
+      }
+
+      for(var i = 0; i < this.itemCount_; i++){
+        this.appendValueInput("OPERAND"+i).setCheck(predicate.inputs[i]);
+      }
+
+      this.setOutput(true, predicate.output);
+
+      var color = colorFromType(predicate.output) 
+
+      if(color)
+        this.setColour(color);
+    },
+
+  mutationToDom: function() {
+    var container = document.createElement('mutation');
+    container.setAttribute('items', this.itemCount_);
+    return container;
+  },
+  domToMutation: function(xmlElement) {
+    this.itemCount_ = parseInt(xmlElement.getAttribute('items'), 10);
+    this.updateShape_();
+  },
+  decompose: function(workspace) {
+    var containerBlock = workspace.newBlock('text_create_join_container');
+    containerBlock.initSvg();
+    var connection = containerBlock.getInput('STACK').connection;
+    for (var i = 0; i < this.itemCount_; i++) {
+      var itemBlock = workspace.newBlock('text_create_join_item');
+      itemBlock.initSvg();
+      connection.connect(itemBlock.previousConnection);
+      connection = itemBlock.nextConnection;
+    }
+    return containerBlock;
+  },
+  compose: function(containerBlock) {
+    var itemBlock = containerBlock.getInputTargetBlock('STACK');
+    // Count number of inputs.
+    var connections = [];
+    while (itemBlock) {
+      connections.push(itemBlock.valueConnection_);
+      itemBlock = itemBlock.nextConnection &&
+          itemBlock.nextConnection.targetBlock();
+    }
+    // Disconnect any children that don't belong.
+    for (var i = 0; i < this.itemCount_; i++) {
+      var connection = this.getInput('OPERAND' + i).connection.targetConnection;
+      if (connection && connections.indexOf(connection) == -1) {
+        connection.disconnect();
+      }
+    }
+    this.itemCount_ = connections.length;
+    this.updateShape_();
+    // Reconnect any child blocks.
+    for (var i = 0; i < this.itemCount_; i++) {
+      Blockly.Mutator.reconnect(connections[i], this, 'OPERAND' + i);
+    }
+  },
+  updateShape_: function() {
+    if (this.itemCount_ && this.getInput('EMPTY')) {
+      this.removeInput('EMPTY');
+    } 
+
+    // Add new inputs.
+    for (var i = 0; i < this.itemCount_; i++) {
+      if (!this.getInput('OPERAND' + i)) {
+        var input = this.appendValueInput('OPERAND' + i);
+       
+        if(predicate.inputs){
+          if(predicate.inputs[i]) 
+            input.setCheck(predicate.inputs[i])
+          else
+            input.setCheck(predicate.inputs[predicate.inputs.length - 1]) //When adding arbitrary new inputs, assume the type is the same as the last specified type ["Number", "Number" ....]
+        }
+        if (i == 0) {
+          input.appendField();
+        }
+      }
+    }
+    // Remove deleted inputs.
+    while (this.getInput('OPERAND' + i)) {
+      this.removeInput('OPERAND' + i);
+      i++;
+    }
+  }
+ 
+  };
+
+  Blockly.JavaScript[predicate.name] = function(block) {
+    if(!predicate.operator)
+      var text_name = block.getFieldValue('NAME');
+    else
+      var text_name = predicate.operator
+  
+
+    var elements = new Array(block.itemCount_);
+    for (var i = 0; i < block.itemCount_; i++) {
+      elements[i] = Blockly.JavaScript.valueToCode(block, 'OPERAND' + i, Blockly.JavaScript.ORDER_NONE)
+    }
+
+                
+    var code = "("+text_name+" "+elements.join(" ")+")";
+
+    return [code, Blockly.JavaScript.ORDER_NONE];
+  };
+}
+
+var Scheme = {};
+
+Scheme.workspace = null;
+
+Scheme.drawVisualization = function() {
+  if(editor.hasFocus()) return
+
+  var formula = Blockly.JavaScript.workspaceToCode(Scheme.workspace).replace(/'/g, "\"").replace(/;/g, "\n")
+      .replace(/\(/g,"\n(") //temp - better than nothing
+
+  editor.setValue(formula)
+
+  doEval()
+};
+
+function doEval(){
+  var formula = Blockly.JavaScript.workspaceToCode(Scheme.workspace).replace(/'/g, "\"").replace(/;/g, "\n")
+
+  var onError = function(e){ console.error(e); }
+  var biwa = new BiwaScheme.Interpreter(onError)
+  biwa.evaluate(formula.replace(), function(result) {
+    //document.getElementById("output").innerHTML = result
+    //console.log(result);
+    render(result)
+  });
+}
+
+Scheme.resize = function() {
+  var width = Math.max(window.innerWidth - 440, 250);
+  document.getElementById('blocklyDiv').style.width = width + 'px';
+  Blockly.svgResize(Scheme.workspace);
+};
+
+Scheme.init = function() {
+  Scheme.workspace = Blockly.inject('blocklyDiv',
+      {collapse: false,
+       disable: false,
+       media: '../../media/',
+       toolbox: document.getElementById('toolbox')});
+
+  Scheme.workspace.clearUndo();
+
+  // When Blockly changes, update the graph.
+  Scheme.workspace.addChangeListener(Scheme.drawVisualization);
+  Scheme.resize();
+};
+
+//window.addEventListener('load', Scheme.init);
+window.addEventListener('resize', Scheme.resize);
+
+function blockNameFromOperator(op){
+  var b = Scheme.predicates.filter(function(p){
+    return p.operator == op
+  })[0]
+
+  if(b) return b.name
+
+  return "raw_function"
+}
+
+
+
+var htdp_predicates = [
+  {name: "raw_function"},
+
+  {name: "define", operator: "define", inputs: [null,null]},
+  {name: "if", operator: "if", inputs: ["Boolean",null,null]},
+
+  {name: "string-append", operator: "string-append", inputs: ["String", "String"], output: "String"},
+
+  {name: "plus", operator: "+", inputs: ["Number", "Number"], output: "Number"},
+  {name: "minus", operator: "-", inputs: ["Number", "Number"], output: "Number"},
+  {name: "times", operator: "*", inputs: ["Number", "Number"], output: "Number"},
+  {name: "divide", operator: "/", inputs: ["Number", "Number"], output: "Number"},
+
+  {name: ">", operator: ">", inputs: ["Number", "Number"], output: "Boolean"},
+  {name: "<", operator: "<", inputs: ["Number", "Number"], output: "Boolean"},
+  {name: "<=", operator: "<=", inputs: ["Number", "Number"], output: "Boolean"},
+  {name: ">=", operator: ">=", inputs: ["Number", "Number"], output: "Boolean"},
+
+  {name: "above", operator: "above", inputs: ["Image", "Image"],output: "Image"},
+  {name: "beside", operator: "beside", inputs: ["Image", "Image"], output: "Image"},
+
+  {name: "circle", operator: "circle", inputs: ["Number", "String", "String"], output: "Image"},
+  {name: "rectangle", operator: "rectangle", inputs: ["Number", "Number", "String", "String"], output: "Image"},
+
+  {name: "not", operator: "not", inputs: ["Boolean"], output: "Boolean"},
+  {name: "and", operator: "and", inputs: ["Boolean", "Boolean"], output: "Boolean"},
+  {name: "or", operator: "or", inputs: ["Boolean", "Boolean"], output: "Boolean"},
+] 
+
+var basic_predicates = [
+  {name: "raw_function"},
+
+  {name: "define", operator: "define", inputs: [null,null]},
+] 
+
+
+//Implementing HTDP functions...
+
+BiwaScheme.define_libfunc("circle", 3, 3, function(ar){
+  return new fabric.Circle({  radius: ar[0], fill: ar[2] })
+});
+
+BiwaScheme.define_libfunc("rectangle", 4, 4, function(ar){
+  return new fabric.Rect({  width: ar[0], height: ar[1], fill: ar[3] })
+});
+
+BiwaScheme.define_libfunc("above", 2, 2, function(ar){
+  var first = fabric.util.object.clone(ar[0])
+  var second = fabric.util.object.clone(ar[1])
+
+  second.set({top: first.getHeight()/2 + second.getHeight()/2, left:0})
+
+  var g = new fabric.Group([first, second], {top: 0, left: 0})
+
+
+  return g
+});
+
+BiwaScheme.define_libfunc("beside", 2, 2, function(ar){
+  var first = fabric.util.object.clone(ar[0])
+  var second = fabric.util.object.clone(ar[1])
+
+  second.set({left: first.getWidth()/2 + second.getWidth()/2, top:0})
+
+  var g = new fabric.Group([first, second], {top: 0, left: 0})
+
+
+  return g
+});
+
+
+function render(shape){
+  shape.set({top: shape.get('top') + 100})
+  shape.set({left: shape.get('left') + 100})
+
+  var canvas = new fabric.StaticCanvas('output');
+
+  canvas.add(shape)
+}
+
+
+
+setupFromPredicates(htdp_predicates)
+
+*/
+
+
+  </script>
+
+</body>
+</html>
