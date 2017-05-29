@@ -1,7 +1,6 @@
 module Lisp where
 
 import Prelude 
-import Control.Monad.Eff (Eff)
 
 import Text.Parsing.Parser
 import Text.Parsing.Parser.Combinators
@@ -18,8 +17,6 @@ import Data.Int (fromString)
 import Control.Alt ((<|>))
 
 import Control.Lazy
-
-
 
 type SParser a = Parser String a
 
@@ -78,12 +75,6 @@ many1 par = do
 parseList :: SParser LispVal -> SParser LispVal
 parseList pars = List <$> pars `sepBy` whiteSpace
 
-parseDottedList :: SParser LispVal -> SParser LispVal
-parseDottedList pars = do
-  init <- pars `endBy` whiteSpace
-  last <- char '.' *> whiteSpace *> pars
-  pure $ DottedList init last
-
 parseQuoted :: SParser LispVal -> SParser LispVal
 parseQuoted pars = do
   _ <- string "'"
@@ -97,14 +88,13 @@ parseExpr = fix $ \p -> (parseAtom
                      <|> parseQuoted p
                      <|> (do
                          _ <- char '('
-                         x <- try (parseList p) <|> parseDottedList p
+                         x <- try (parseList p) 
                          _ <- char ')'
                          pure x))
 
 
 data LispVal = Atom String
              | List (List LispVal)
-             | DottedList (List LispVal) LispVal
              | Int Int
              | String String
              | Bool Boolean
@@ -113,7 +103,6 @@ showLispVal v =
   case v of 
     Atom s -> "Atom " <> s 
     List l -> "List [" <> (foldl (\a b -> a <> "," <> b) "" (showLispVal <$> l)) <> "]"
-    DottedList l v -> "Dotted List " <> (foldl (<>) "" (showLispVal <$> l)) <> (showLispVal v)
     Int i -> "Int " <> show i
     String s -> "String " <> s
     Bool b -> "Boolean " <> case b of
@@ -122,4 +111,11 @@ showLispVal v =
 
 instance sShowLispVal :: Show LispVal where
   show l = showLispVal l
+
+
+example = 
+  let parsed = runParser "(above (circle 40 \"solid\" \"red\") (circle 40 \"solid\" \"red\"))" parseExpr in
+    case parsed of
+      Right v -> v 
+      Left  e -> Atom "Nope" 
 
