@@ -112,9 +112,11 @@ showLispVal v =
 instance sShowLispVal :: Show LispVal where
   show l = showLispVal l
 
+example = parseLisp "(above (circle 40 \"solid\" \"red\") (circle 40 \"solid\" \"red\"))" 
 
-example = 
-  let parsed = runParser "(above (circle 40 \"solid\" \"red\") (circle 40 \"solid\" \"red\"))" parseExpr in
+parseLisp :: String -> LispVal
+parseLisp s = 
+  let parsed = runParser s parseExpr in
     case parsed of
       Right v -> v 
       Left  e -> Atom "Nope" 

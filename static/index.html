@@ -69,111 +69,6 @@
   </xml>
   <script>
 
-    /*
-
-  var editor = CodeMirror.fromTextArea(document.getElementById("scheme"), {
-    value: "(hello 'world')",
-    mode:  "scheme"
-  });
-
-  editor.on("change", function(cm){
-    if(!editor.hasFocus()) return
-
-    var text = "(prog " + cm.getValue().replace(/  /, " ").replace(/;.*\n/g,"") +")"
-    var tree = parseScheme(text)
-
-    var blocks = tree.slice(1).map(function(t){
-      return treeToXml(t)
-    })
-
-    var xml = "<xml>"+blocks+"</xml>"
-
-    var dom = Blockly.Xml.textToDom(xml)
-
-    Scheme.workspace.clear()
-    Blockly.Xml.domToWorkspace(dom, Scheme.workspace)
-    Scheme.workspace.cleanUp()
-
-    doEval()
-  })
-
-  function tokenize(input) {
-     return input
-           .replace(/\(/g, ' ( ')
-           .replace(/\)/g, ' ) ')
-           .trim()
-           .split(/\s+/);
-  }
-
-  function parenthesize(input, list) {
-     if (list === undefined) {
-       return parenthesize(input, []);
-    } else {
-       var token = input.shift();
-
-       if (token === undefined) {
-         return list.pop();
-       } else if (token === "(") {
-         list.push(parenthesize(input, []));
-         return parenthesize(input, list);
-       } else if (token === ")") {
-         return list;
-       } else {
-         return parenthesize(input, list.concat(categorize(token)));
-       }
-    }
-  }
-
-   var categorize = function(input) {
-     if (!isNaN(parseFloat(input))) {
-       return { type:'literal', value: parseFloat(input) };
-     } else if (input[0] === '"' && input.slice(-1) === '"') {
-       return { type:'literal', value: input.slice(1, -1) };
-     } else {
-       return { type:'identifier', value: input };
-     }
-   }
-
-  function parseScheme(text){
-    var t = tokenize(text) 
-    //console.log(t)
-    var p = parenthesize(t)
-    //console.log(p)
- 
-    return p
-  }
-
-  function treeToXml(tree){
-    if(tree.length > 1){
-      var ret= '<block type="'+blockNameFromOperator(tree[0].value)+'"><mutation items="'+(tree.length-1)+'"></mutation><field name="NAME">'+(tree[0].value)+'</field>' 
-
-      for(var i in tree.slice(1)){
-        var operand = tree.slice(1)[i]
-
-        ret += '<value name="OPERAND'+i+'">'
-
-        ret += treeToXml(tree.slice(1)[i])
-
-        ret += '</value>'
-      }
-
-      ret += '</block>'
-
-      return ret
-
-    } else if(tree.value !== undefined) {
-      if(typeof(tree.value) == "number" && tree.type == "literal"){
-        return '<block type="math_number"><field name="NUM">'+(tree.value)+'</field></block>' 
-      }else if(typeof(tree.value) == "string" && tree.type == "literal"){
-        return '<block type="text"><field name="TEXT">'+(tree.value)+'</field></block>' 
-      }else if(typeof(tree.value) == "string" && tree.type == "identifier"){
-        return '<block type="raw"><field name="NAME">'+(tree.value)+'</field></block>' 
-      } else {
-        return "???"
-      }
-    }
-  }
-
   Blockly.Blocks["raw"] = {
     // x variable getter.
     init: function() {
@@ -553,8 +448,6 @@ function render(shape){
 
 
 setupFromPredicates(htdp_predicates)
-
-*/
 
 
   </script>

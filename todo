@@ -1,5 +1,9 @@
-
-Refactor into NPM / React / Elm / Purescript...
+Refactor into Purescript
+  > Have 2-way parsing, scheme <-> blocklyXML
+  > Debug and display blockly
+    > Can we do this without block/function/type definitions?
+    > TODO: Bring block/function/type definitions into PureScript domain
+ 
   > Make data representation for workspace (function defs with types)
     > Block data structure
   > Function to take a workspace definition and a parsed lisp program and return a blockly xml 
@@ -49,3 +53,8 @@ Bigger goals:
 * Integrate with LearnToMod
 * Integrate with Vox-L
 
+
+
+Research Ideas:
+
+* Pictures that draw pictures
