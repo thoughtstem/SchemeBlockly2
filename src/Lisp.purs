@@ -99,15 +99,19 @@ data LispVal = Atom String
              | String String
              | Bool Boolean
 
+joinS Nil     = ""
+joinS (x:Nil) = x
+joinS (x:xs)  = x <> " " <> (joinS xs)
+
 showLispVal v = 
   case v of 
-    Atom s -> "Atom " <> s 
-    List l -> "List [" <> (foldl (\a b -> a <> "," <> b) "" (showLispVal <$> l)) <> "]"
-    Int i -> "Int " <> show i
-    String s -> "String " <> s
-    Bool b -> "Boolean " <> case b of
-                              true -> "true"
-                              false -> "false"
+    Atom s -> s 
+    List l -> "(" <> (joinS $ showLispVal <$> l) <> ")"
+    Int i -> show i
+    String s -> "\"" <> s <> "\""
+    Bool b -> case b of
+                true -> "true"
+                false -> "false"
 
 instance sShowLispVal :: Show LispVal where
   show l = showLispVal l
@@ -119,5 +123,5 @@ parseLisp s =
   let parsed = runParser s parseExpr in
     case parsed of
       Right v -> v 
-      Left  e -> Atom "Nope" 
+      Left  e -> Atom (show e)
 

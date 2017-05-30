@@ -45,6 +45,8 @@ data ValueAttributes =
 
 type SParser a = Parser String a
 
+symbol :: SParser Char
+symbol = oneOf $ S.toCharArray ";`}{!#$%&|*+-/:=?@^_~."
 
 digit :: SParser Char
 digit = oneOf $ S.toCharArray "0123456789"
@@ -82,7 +84,7 @@ attributeNamed s = do
   _ <- string s
   _ <- char '=' 
   quote <- char '"' <|> char '\''
-  val <- many (noneOf ['"'])
+  val <- many $ letter <|> digit <|> symbol
   _ <- char quote
   pure $ listToString val
 
@@ -123,13 +125,13 @@ valueTag = do
 
 blockTag :: SParser Block
 blockTag = do
-  tag <- (try $ beginOpenTag "block") <|> (try $ beginOpenTag "shadow")
+  tag <- beginOpenTag "block" <|> beginOpenTag "shadow"
   btype <- padded $ attributeNamed "type" 
   _ <- option "" $ try $ padded $ attributeNamed "id" 
   _ <- option "" $ try $ padded $ attributeNamed "x" 
   _ <- option "" $ try $ padded $ attributeNamed "y" 
   _ <- endOpenTag 
-  _ <- option "" $ try $ padded mutationTag
+  _ <- padded mutationTag
   fs <- option Nil $ many $ try $ padded fieldTag 
   vs <- option Nil $ many $ try $ padded valueTag 
   _ <- padded $ closeTag tag
@@ -159,9 +161,7 @@ indentation = "  "
 pad 0   = ""
 pad n   = indentation <> (pad $ n-1)
 
-joinN Nil     = ""
-joinN (x:Nil) = x
-joinN (x:xs)  = x <> "\n" <> (joinN xs)
+joinN l = foldl (\f s -> f <> "\n" <> s) "" l
 
 instance prettyShowBlocklyXML :: Show Blockly where
   show blockly = showBlocklyXML 0 blockly
