@@ -98,11 +98,17 @@ data LispVal = Atom String
              | Int Int
              | String String
              | Bool Boolean
+             | Shadow LispVal
+
+shadowizeLisp (Shadow b) = Shadow b 
+shadowizeLisp (List bs) = List $ Shadow <$> bs
+shadowizeLisp b = Shadow b 
 
 joinS Nil     = ""
 joinS (x:Nil) = x
 joinS (x:xs)  = x <> " " <> (joinS xs)
 
+showLispVal :: LispVal -> String
 showLispVal v = 
   case v of 
     Atom s -> s 
@@ -112,6 +118,7 @@ showLispVal v =
     Bool b -> case b of
                 true -> "true"
                 false -> "false"
+    Shadow b -> showLispVal b
 
 instance sShowLispVal :: Show LispVal where
   show l = showLispVal l

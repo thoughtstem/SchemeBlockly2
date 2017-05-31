@@ -1,15 +1,40 @@
 Refactor into Purescript
-  > Have 2-way parsing, scheme <-> blocklyXML
-  > Debug and display blockly
-    > Can we do this without block/function/type definitions?
-    > TODO: Bring block/function/type definitions into PureScript domain
+  > 2-way parsing is working,
+    but the way that the infinite loop was fixed is still kind of mysterious.  Need to clean that up...
+
+  > Working with blockly is a nightmare 
+    > Parameter mutation is broken    
+    > Can it just be reactive to a document change?  Or  write our own?
  
-  > Make data representation for workspace (function defs with types)
-    > Block data structure
-  > Function to take a workspace definition and a parsed lisp program and return a blockly xml 
-  > Function to take a blockly xml and return a parsed lisp program??
-    > Just get rid of Blockly's compiler and just use Blockly for its UI 
-    > Ooooor... use PureScript to generate Blockly JavaScript to define compiler?
+
+  > Allow whitespace/padding in scheme editor
+    > Don't reset with changes to blockly
+
+  > Allow free positioning in blockly
+    > Don't reset x and y positions with changes to scheme
+
+
+
+
+  > Execution and output.  Write interpreter?
+    > Show execution steps, expression simplification
+    > Draw the pretty pictures on a canvas?
+    > Or ship to unity for execution in voxl
+    > Or ship to ltm for execution on mc server
+
+
+  > generate new function definitions from code (define ...) -> Infer type, Place in toolbox
+
+  > Use function definitions to 
+     > set blockly toolbox
+       > Categorize by output type and input type
+    
+     > tell blockly what the inputs and outputs are
+       > via mutation 
+    
+
+ 
+
 
 
 
