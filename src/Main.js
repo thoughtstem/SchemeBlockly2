@@ -15,15 +15,20 @@ var Editor = React.createClass({
     return nextProps.should_update
   },
   componentWillUpdate:function(nextProps,nextState){
-    if(nextProps.text == this.props.text || nextProps.text == "" && nextProps.text == undefined || !nextProps.should_update) return
+    if(nextProps.text == this.props.text || nextProps.text == this.last_text || nextProps.text == "" && nextProps.text == undefined || !nextProps.should_update) return
 
-    console.log("SETTING ACE", nextProps.text, nextProps.should_update)
+    this.last_text = nextProps.text
+
 
     this.ace.editor.setValue(nextProps.text, 0)
   },
   onChange: function(ev){
-    var val = ev; // Outputs the value of the editor
-    console.log("CALLING ON CHANGEEEEEE", val)
+    var val = this.ace.editor.getValue()
+
+    console.log("EDITOR CHANGE", val)
+
+    if(val == this.last_text) return 
+
     if(val && val.length != 0)
       this.props.onChange({target: {value: val}})
   },
@@ -41,12 +46,20 @@ var BlocklyWrapper = React.createClass({
     Blockly.svgResize(this.workspace);
   },
   blocklyChanged: function(ev) {
+
     if(ev.workspaceId){//It's a blockly changed event
       var xml_dom = Blockly.Xml.workspaceToDom(this.workspace)
       var xml = Blockly.Xml.domToText(xml_dom)
     } else {
       var xml = ev.nativeEvent.target.value
     }
+
+    if(xml == this.last_text) return
+    if(xml == this.last_sent_text) return
+
+    this.last_sent_text = xml
+
+    console.log("BLOCKLY CHANGE", xml)
     this.props.onChange({target: {value: xml}})
   },
   componentDidMount: function(){
@@ -65,14 +78,20 @@ var BlocklyWrapper = React.createClass({
     this.workspace.addChangeListener(this.blocklyChanged);
     this.resize()
     window.addEventListener('resize', this.resize)
+
+    window.workspace = this.workspace
   },
   shouldComponentUpdate: function(nextProps, nextState){
     return nextProps.should_update
   },
   componentWillUpdate: function(props,state){
+
     if(props.text == this.props.text){
       return
     }
+
+    this.last_text = props.text
+    //console.log("BLOCKLY SET", props.text)
 
     this.workspace.clear()
     var dom = Blockly.Xml.textToDom(props.text)

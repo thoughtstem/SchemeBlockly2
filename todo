@@ -1,13 +1,14 @@
 Refactor into Purescript
-  > 2-way parsing UI still needs work 
-    > Now that the Ace editor is there, there's some kind of infinite loop.  Keeps firing onChange events and keeps getting new values passed in.  
+  > Working, but typing in ACE is unbearably slow...
+
+  There's a weird, unintentional cycle between setting the blockly state, which sets the blockly orkspace, which triggers a change event, which changes the blockly state (adds IDs e.g.).  The cycle is broken on the blockly side, because it won't set the workspace twice.  But it's gross and needs to be simplified.
+    > Probably a similar cycle on the editor side
 
 
 
-
-  > Working with blockly is a nightmare 
+  > Blockly features to fix  
     > Parameter mutation is broken    
-    > Can it just be reactive to a document change?  Or  write our own?
+    > Input/output restrictions on blocks
  
 
   > Allow whitespace/padding in scheme editor
@@ -15,6 +16,7 @@ Refactor into Purescript
 
   > Allow free positioning in blockly
     > Don't reset x and y positions with changes to scheme
+    > Also don't clear shadow blocks
 
 
 

@@ -98,11 +98,15 @@ data LispVal = Atom String
              | Int Int
              | String String
              | Bool Boolean
-             | Shadow LispVal
+             | Meta LispMetaData LispVal
 
-shadowizeLisp (Shadow b) = Shadow b 
-shadowizeLisp (List bs) = List $ Shadow <$> bs
-shadowizeLisp b = Shadow b 
+type LispMetaData = { 
+                      block_type:: String,
+                      shadowness :: Boolean,
+                      x :: Int, 
+                      y :: Int,
+                      id :: String }
+
 
 joinS Nil     = ""
 joinS (x:Nil) = x
@@ -118,7 +122,30 @@ showLispVal v =
     Bool b -> case b of
                 true -> "true"
                 false -> "false"
-    Shadow b -> showLispVal b
+    Meta d b -> showLispVal b
+
+lispDebugShow :: LispVal -> String
+lispDebugShow v = 
+  case v of 
+    Atom s -> s 
+    List l -> "(" <> (joinS $ lispDebugShow <$> l) <> ")"
+    Int i -> show i
+    String s -> "\"" <> s <> "\""
+    Bool b -> case b of
+                true -> "true"
+                false -> "false"
+    Meta d b -> "[" <> (showLispMeta d) <> "]<" <> (lispDebugShow b) <> ">"
+
+showLispMeta { block_type:b, shadowness:s, x:x, y:y, id:id } = "{"<>(joinS values)<>"}"
+  where values = (
+    showMetaVal "block_type" (show b) :
+    showMetaVal "shadowness" (show s) :
+    showMetaVal "x" (show x) :
+    showMetaVal "y" (show y) :
+    showMetaVal "id" (show id) :
+    Nil )
+
+showMetaVal k v = k<>":"<>v
 
 instance sShowLispVal :: Show LispVal where
   show l = showLispVal l

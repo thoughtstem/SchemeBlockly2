@@ -69,19 +69,33 @@ reconciled state = (show state.editor) == (show state.blockly)
 
 foldp :: ∀ fx. Event -> State -> EffModel State Event fx
 foldp (CodeChange ev) state = 
-  do { state: newState, effects: [] }
-    where newState = case (runParser (targetValue ev) parseExpr) of
-              Right parsed -> (reconcileEditor state parsed) { message = ("Last Parsed:"<> (targetValue ev))}
-              Left err -> state
+      case (targetValue ev) == "<<undefined>>" of
+           true -> do { state: state, effects: [] }
+           false -> if state.focused /= CodeFocused then {state: state, effects: []} else handleEvent (CodeChange ev) state
 
-foldp (BlocklyChange ev) state = do
-    { state: newState, effects: [] }
-      where newState = case parseBlockly $ (targetValue ev) of
-                          Right s -> (reconcileBlockly state $ blocklyXMLToLisp s) {message = ("Last Parsed: " <> (targetValue ev))}
-                          Left m  -> state {message = "Last Parsed: " <> (targetValue ev)}
+foldp (BlocklyChange ev) state = 
+    case (targetValue ev) == "<<undefined>>" of
+         true -> do { state: state, effects: [] }
+         false -> if state.focused /= BlocklyFocused then {state: state, effects: []} else handleEvent (BlocklyChange ev) state
 
 foldp (CodeFocus ev) state = {state: state {focused = CodeFocused}, effects: []}
 foldp (BlocklyFocus ev) state =  {state: state {focused = BlocklyFocused}, effects: []}
+
+handleEvent (CodeChange ev) state = 
+  do { state: newState, effects: [] }
+     where newState = case (runParser (targetValue ev) parseExpr) of
+            Right parsed -> (reconcileEditor state parsed) { message = state.message <> " /// CodeChangeParsed"}
+            Left err -> state{ message = state.message <> " /// CodeChangeFailedParse(" <> (targetValue ev) <> ")"}
+
+handleEvent (BlocklyChange ev) state = 
+  do { state: newState, effects: [] }
+     where newState = case parseBlockly $ targetValue ev of
+            Right parsed -> (reconcileBlockly state $ blocklyXMLToLisp parsed) { message = state.message <> " /// BlocklyChangeParsed"}
+            Left err -> state{ message = state.message <> " /// BlocklyChangeFailedParse(" <> (targetValue ev) <> ")"}
+
+
+handleEvent _ state = {state:state, effects:[]}
+
 
 view :: State -> HTML Event
 view state =
@@ -92,10 +106,10 @@ view state =
     (editorComponent {text: show es, should_update: state.focused /= CodeFocused})  #! onChange CodeChange #! onFocus CodeFocus $ text "HI"
     (blocklyComponent {text: show $ lispToBlocklyXML bs, toolboxXML: functionDefinitions, should_update: state.focused /= BlocklyFocused})  #! onChange BlocklyChange #! onFocus BlocklyFocus $ text "HI"
     --div ! id "debugging" $ do
-    div $ text $ show $ es
+    div $ text $ lispDebugShow $ es
     div $ text $ if reconciled state then "MATCH!" else "NO MATCH!"
-    div $ text $ show $ bs
-    div $ text $ show $ m
+    div $ text $ lispDebugShow $ bs
+    --div $ text $ show $ m
     div $ text $ show $ case state.focused of 
                              CodeFocused   -> "Code Focused"
                              BlocklyFocused -> "Blockly Focused"

@@ -11,6 +11,7 @@ import Data.Show
 import Data.Either
 import Data.Maybe
 import Data.String (toUpper)
+import Data.Int (fromString)
 import Data.List
 import Data.String as S
 
@@ -19,19 +20,35 @@ import Control.Alt ((<|>))
 import TypedLisp 
 
 
+str2num :: String -> Int
+str2num s = fromStringOrZero $ fromString s
+
+fromStringOrZero :: Maybe Int -> Int
+fromStringOrZero (Just s) = s
+fromStringOrZero _        = 0
+
 
 data Blockly =
   Blockly (List Block)
 
 data Block = 
-  Block BlockAttributes (List Field) (List Value) Shadowness
+  Block BlockMetaData (List Field) (List Value) 
 
-shadowize (Block as fs vs _) = (Block as fs vs true)
 
-type Shadowness = Boolean
+type BlockMetaData = { 
+                      block_type :: String,
+                      shadowness :: Boolean,
+                      x :: Int, 
+                      y :: Int,
+                      id :: String }
 
-data BlockAttributes = 
-  BlockType String 
+setBlockMeta d (Block _ fs vs) = Block d fs vs
+
+type XPos = Int
+type YPos = Int
+type Id   = String
+
+shadowize (Block d fs vs) = (Block d{shadowness = true} fs vs)
 
 data MutationAttributes =
   MutationItems Int 
@@ -143,15 +160,15 @@ blockTag :: SParser Block
 blockTag = do
   tag <- (try $ beginOpenTag "block") <|> (try $ beginOpenTag "shadow")
   _ <- padded $ attributeNamed "type" 
-  _ <- option "" $ try $ padded $ attributeNamed "id" 
-  _ <- option "" $ try $ padded $ attributeNamed "x" 
-  _ <- option "" $ try $ padded $ attributeNamed "y" 
+  id <- option "" $ try $ padded $ attributeNamed "id" 
+  x <- option "" $ try $ padded $ attributeNamed "x" 
+  y <- option "" $ try $ padded $ attributeNamed "y" 
   _ <- endOpenTag 
   btype <- padded mutationTag
   fs <- option Nil $ many $ try $ padded fieldTag 
   vs <- option Nil $ many $ try $ padded valueTag 
   _ <- padded $ closeTag tag
-  pure $ Block (BlockType btype) fs vs (tag == "shadow")
+  pure $ Block {block_type: btype, shadowness: tag == "shadow", x: str2num x, y: str2num y, id: id} fs vs 
 
 
 blocklyParser :: SParser Blockly
@@ -196,24 +213,24 @@ showBlocklyXML padding (Blockly children) =
     let inner = joinN ((showBlockXML $ padding+1) <$> children) in
         "<xml>" <> inner <> "</xml>"
 
-showBlockXML padding (Block (BlockType t) fields values shadowness) = 
-  let mutationXML = (pad $ padding+1) <> mutationXMLForBlock (Block (BlockType t) fields values shadowness) in
+showBlockXML padding (Block d fields values) = 
+  let mutationXML = (pad $ padding+1) <> mutationXMLForBlock (Block d fields values) in
     let fieldsXML = joinN ((showFieldXML $ padding+1) <$> fields) in
       let valuesXML = joinN ((showValueXML $ padding+1) <$> values) in
-          let tag = if shadowness then "shadow" else "block" in
-            (pad padding) <> "<"<>tag<>" type=\"super_block\">\n" <> 
+          let tag = if d.shadowness then "shadow" else "block" in
+            (pad padding) <> "<"<>tag<>" type=\"super_block\" x=\""<>(show d.x)<>"\" y=\""<>(show d.y)<>"\" id=\""<>d.id<>"\">\n" <> 
                  mutationXML <> 
                  fieldsXML <> 
                  valuesXML <> 
             (pad padding) <> "</"<>tag<>">\n"
 
 
-mutationXMLForBlock (Block (BlockType t) fields values shadowness) = 
+mutationXMLForBlock (Block d fields values) = 
   "<mutation " <> (joinS attrs) <> ">" <> "</mutation>"  where
      attrs = (attrString "items"      $ show $ length values) :
-             (attrString "block_type" $ t) :
-             (attrString "color" $ show $ colorForBlockType defaultFunctionDefinitions t) :
-             (attrString "value" $ valueFromBlock (Block (BlockType t) fields values shadowness) ) :
+             (attrString "block_type" $ d.block_type) :
+             (attrString "color" $ show $ colorForBlockType defaultFunctionDefinitions d.block_type) :
+             (attrString "value" $ valueFromBlock (Block d fields values) ) :
              Nil
 
 
@@ -226,8 +243,8 @@ colorForBlockType defs fname =
       BooleanType -> 210
       ImageType -> 290
 
-valueFromBlock (Block (BlockType _) Nil _ _) = ""
-valueFromBlock (Block (BlockType _) (f:fs) _ _) = valueFromField f
+valueFromBlock (Block _ Nil _) = ""
+valueFromBlock (Block d (f:fs) _) = valueFromField f
 
 valueFromField (Field _ s) = s
 
@@ -257,26 +274,32 @@ operands bs = operands_ bs 0
 
 block btype children = 
   let bs = operands children in
-    Block (BlockType btype) Nil bs false
+    Block defaultBlockMeta{block_type = btype} Nil bs 
 
 
 
 
 number_block n =
-   Block (BlockType "math_number") (Field (FieldName "NUM") (show n) : Nil) Nil false
+  Block defaultBlockMeta{block_type = "math_number"} (Field (FieldName "NAME") (show n) : Nil) Nil
 
 text_block t =
-   Block (BlockType "text") (Field (FieldName "TEXT") t : Nil) Nil false 
+  Block defaultBlockMeta{block_type = "text"} (Field (FieldName "NAME") t : Nil) Nil 
 
 bool_block b =
-   Block (BlockType "logic_boolean") (Field (FieldName "BOOL") (toUpper $ show b) : Nil) Nil false
+  Block defaultBlockMeta{block_type = "logic_boolean"} (Field (FieldName "NAME") (toUpper $ show b) : Nil) Nil 
 
 circle size mode color =
   let bs = (number_block size : text_block mode : text_block color : Nil) in
     block "circle" bs
 
 
-
+defaultBlockMeta = {
+  block_type: "",
+  x: 0,
+  y: 0,
+  id: "",
+  shadowness: false
+}
 
 circle_example = circle 40 "solid" "red"
 
