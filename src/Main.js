@@ -1,44 +1,92 @@
 "use strict";
 
+var React = require("react")
 
-exports.getBlockly = function(x){
-  var xml_dom = Blockly.Xml.workspaceToDom(Scheme.workspace)
-  var xml = Blockly.Xml.domToText(xml_dom)
-  console.log("GETTING BLOCKLY", xml)
-  return xml
-}
-
-var last_set_xml = ""
-exports.setBlockly = function(xml) {
-   if(!window["Scheme"]) return ""
-
-    //if(xml == last_set_xml) return ""
-    //xml = last_set_xml
-
-    console.log("SETTING BLOCKLY", xml)
+var ReactAce = require('react-ace-editor')
 
 
-    Scheme.workspace.clear()
 
-    var dom = Blockly.Xml.textToDom(xml)
-    console.log(dom)
-    Blockly.Xml.domToWorkspace(dom, Scheme.workspace)
-    
-    return xml
-}
+var Editor = React.createClass({
+  componentDidMount: function(){
+    this.ace.editor.on("focus", this.props.onFocus)
+    this.ace.editor.setValue(this.props.text)
+  },
+  shouldComponentUpdate: function(nextProps, nextState){
+    return nextProps.should_update
+  },
+  componentWillUpdate:function(nextProps,nextState){
+    if(nextProps.text == this.props.text || nextProps.text == "" && nextProps.text == undefined || !nextProps.should_update) return
 
-exports.setBlocklyToolbox = function(xml) {
-  console.log("Setting Toolbox")
+    console.log("SETTING ACE", nextProps.text, nextProps.should_update)
 
-    document.getElementById("functions_tab").innerHTML = xml
+    this.ace.editor.setValue(nextProps.text, 0)
+  },
+  onChange: function(ev){
+    var val = ev; // Outputs the value of the editor
+    console.log("CALLING ON CHANGEEEEEE", val)
+    if(val && val.length != 0)
+      this.props.onChange({target: {value: val}})
+  },
+  render: function(){
+    return React.createElement(ReactAce,{mode: "scheme", theme: "eclipse", setBehavioursEnabled: false, setReadOnly: false, onChange: this.onChange, ref: function(instance){ this.ace = instance }.bind(this)})
+  }
+})
 
-   if(!window["Scheme"]) init()
+exports.editorComponent_ = Editor
 
-   return xml
-}
+var BlocklyWrapper = React.createClass({
+  resize: function(){
+    var width = Math.max(window.innerWidth - 440, 250);
+    document.getElementById('blocklyDiv').style.width = width + 'px';
+    Blockly.svgResize(this.workspace);
+  },
+  blocklyChanged: function(ev) {
+    if(ev.workspaceId){//It's a blockly changed event
+      var xml_dom = Blockly.Xml.workspaceToDom(this.workspace)
+      var xml = Blockly.Xml.domToText(xml_dom)
+    } else {
+      var xml = ev.nativeEvent.target.value
+    }
+    this.props.onChange({target: {value: xml}})
+  },
+  componentDidMount: function(){
+    document.getElementById("toolbox").innerHTML = this.props.toolboxXML
+    document.getElementById("blocklyDiv").onclick = this.props.onFocus
 
-  window["init"] = function(){
+    initBlocklySuperBlock()
 
+    this.workspace = Blockly.inject('blocklyDiv',
+        {collapse: false,
+         disable: false,
+         media: '../../media/',
+         toolbox: document.getElementById('toolbox')});
+
+    this.workspace.clearUndo();
+    this.workspace.addChangeListener(this.blocklyChanged);
+    this.resize()
+    window.addEventListener('resize', this.resize)
+  },
+  shouldComponentUpdate: function(nextProps, nextState){
+    return nextProps.should_update
+  },
+  componentWillUpdate: function(props,state){
+    if(props.text == this.props.text){
+      return
+    }
+
+    this.workspace.clear()
+    var dom = Blockly.Xml.textToDom(props.text)
+    Blockly.Xml.domToWorkspace(dom, this.workspace)  
+  },
+  render: function(){
+    return React.createElement("textarea", {style: {display: "none"}, onFocus: this.props.onFocus, onChange: this.blocklyChanged, value: this.props.text},this.props.text)
+  }
+})
+
+exports.blocklyComponent_ = BlocklyWrapper
+
+
+function initBlocklySuperBlock(){
     Blockly.Blocks["super_block"] = {
       // x variable getter.
       init: function() {
@@ -131,44 +179,4 @@ exports.setBlocklyToolbox = function(xml) {
     }
    
   }
-
-
-  var Scheme = {};
-  window["Scheme"] = Scheme
-
-  Scheme.workspace = null;
-
-  Scheme.drawVisualization = function() {
-    if(document.getElementById("scheme") == document.activeElement ) return
-   
-
-    document.getElementById("set_from_blockly").click()
-  };
-
-  Scheme.resize = function() {
-    var width = Math.max(window.innerWidth - 440, 250);
-    document.getElementById('blocklyDiv').style.width = width + 'px';
-    Blockly.svgResize(Scheme.workspace);
-  };
-
-  Scheme.init = function() {
-
-
-    Scheme.workspace = Blockly.inject('blocklyDiv',
-        {collapse: false,
-         disable: false,
-         media: '../../media/',
-         toolbox: document.getElementById('toolbox')});
-
-    Scheme.workspace.clearUndo();
-    Scheme.workspace.addChangeListener(Scheme.drawVisualization);
-    Scheme.resize();
-  };
-
-  //window.addEventListener('load', Scheme.init);
-  window.addEventListener('resize', Scheme.resize);
-
-
-  Scheme.init()
-
 }

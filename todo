@@ -1,6 +1,9 @@
 Refactor into Purescript
-  > 2-way parsing is working,
-    but the way that the infinite loop was fixed is still kind of mysterious.  Need to clean that up...
+  > 2-way parsing UI still needs work 
+    > Now that the Ace editor is there, there's some kind of infinite loop.  Keeps firing onChange events and keeps getting new values passed in.  
+
+
+
 
   > Working with blockly is a nightmare 
     > Parameter mutation is broken    
@@ -21,6 +24,9 @@ Refactor into Purescript
     > Draw the pretty pictures on a canvas?
     > Or ship to unity for execution in voxl
     > Or ship to ltm for execution on mc server
+
+    > Support more Scheme (function defs?  Ifs?  )
+      * Use existing interpreter?
 
 
   > generate new function definitions from code (define ...) -> Infer type, Place in toolbox

@@ -164,11 +164,7 @@ blocklyParser = do
   pure $ Blockly bs
 
 
-parseBlockly s = 
-  let parsed = runParser s blocklyParser in
-    case parsed of  
-      Right s -> s
-      Left  e -> Blockly (text_block (show e) : Nil)
+parseBlockly s = runParser s blocklyParser
 
 
 
