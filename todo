@@ -1,8 +1,10 @@
 Refactor into Purescript
-  > Working, but typing in ACE is unbearably slow...
+  > Toy interpreter kind of working.  Won't exec on editor text, though...
+    
 
-  There's a weird, unintentional cycle between setting the blockly state, which sets the blockly orkspace, which triggers a change event, which changes the blockly state (adds IDs e.g.).  The cycle is broken on the blockly side, because it won't set the workspace twice.  But it's gross and needs to be simplified.
-    > Probably a similar cycle on the editor side
+  > Working, but typing in ACE is unbearably slow...
+    Might be a bit better now.
+    Bigger fix would be to use tree diffing to map between AST nodes on each change, and only change the ones that have been edited
 
 
 
