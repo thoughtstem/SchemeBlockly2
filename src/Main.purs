@@ -37,7 +37,8 @@ blocklyComponent = reactClassWithProps blocklyComponent_ "blockly"
 data Event = CodeChange DOMEvent | 
              BlocklyChange DOMEvent |
              BlocklyFocus DOMEvent |
-             CodeFocus DOMEvent 
+             CodeFocus DOMEvent |
+             StepCode DOMEvent 
 
 data FocusState = BlocklyFocused | CodeFocused | NoneFocused
 
@@ -50,6 +51,8 @@ instance eqT :: Eq FocusState where
 
 
 type State = {editor:: LispVal, blockly:: LispVal, message:: String, focused:: FocusState}
+
+stepState state = state{editor = stepLispProgram state.editor, blockly = stepLispProgram state.blockly, focused = NoneFocused}
 
 
 reconcileBlockly state val = 
@@ -68,15 +71,17 @@ reconciled state = (show state.editor) == (show state.blockly)
 
 
 foldp :: ∀ fx. Event -> State -> EffModel State Event fx
+foldp (StepCode ev) state = do {state: stepState state ,effects: []}
+
 foldp (CodeChange ev) state = 
       case (targetValue ev) == "<<undefined>>" of
            true -> do { state: state, effects: [] }
-           false -> if state.focused /= CodeFocused then {state: state, effects: []} else handleEvent (CodeChange ev) state
+           false -> if state.focused == CodeFocused then  handleEvent (CodeChange ev) state else {state: state, effects: []}
 
 foldp (BlocklyChange ev) state = 
     case (targetValue ev) == "<<undefined>>" of
          true -> do { state: state, effects: [] }
-         false -> if state.focused /= BlocklyFocused then {state: state, effects: []} else handleEvent (BlocklyChange ev) state
+         false -> if state.focused == BlocklyFocused then handleEvent (BlocklyChange ev) state else  {state: state, effects: []} 
 
 foldp (CodeFocus ev) state = {state: state {focused = CodeFocused}, effects: []}
 foldp (BlocklyFocus ev) state =  {state: state {focused = BlocklyFocused}, effects: []}
@@ -105,6 +110,7 @@ view state =
   div do
     (editorComponent {text: show es, should_update: state.focused /= CodeFocused})  #! onChange CodeChange #! onFocus CodeFocus $ text "HI"
     (blocklyComponent {text: show $ lispToBlocklyXML bs, toolboxXML: functionDefinitions, should_update: state.focused /= BlocklyFocused})  #! onChange BlocklyChange #! onFocus BlocklyFocus $ text "HI"
+    div #! onClick StepCode $ text "Step"
     --div ! id "debugging" $ do
     div $ text $ lispDebugShow $ es
     div $ text $ if reconciled state then "MATCH!" else "NO MATCH!"

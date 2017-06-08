@@ -3,6 +3,7 @@ bower_components/
 output/
 dist/
 static/dist/
+static/blockly/
 .psci_modules
 npm-debug.log
 **DS_Store
