@@ -111,14 +111,8 @@ type LispMetaData = {
                       id :: String }
 
 
-evalLispProgram :: LispVal -> LispVal
-evalLispProgram (Atom s) = Atom s
-evalLispProgram (Int i)  = Int i
-evalLispProgram (String s) = String s
-evalLispProgram (Bool b) = Bool b
-evalLispProgram (List (Atom "plus" : other_things))  = plusLisp $ List $ evalLispProgram <$> other_things
-evalLispProgram (List (Atom "minus" : other_things)) = minusLisp $ List $ evalLispProgram <$> other_things
-evalLispProgram v        = v
+
+--This tuple stuff is confusing as fuck -SF
 
 stepLispProgram_ :: Tuple Boolean LispVal -> Tuple Boolean LispVal
 stepLispProgram_ (Tuple true  v) = Tuple true v
@@ -137,42 +131,35 @@ stepLispProgram :: LispVal -> LispVal
 stepLispProgram v = snd $ stepLispProgram_ $ Tuple false v
 
 isSimpleList :: LispVal -> Boolean
-isSimpleList (List ((List v):xs)) = false
-isSimpleList (List (x:xs))        = true && (isSimpleList $ List xs)
-isSimpleList _ = true
+isSimpleList (List xs)       = foldl (\f s-> f && (not isList s)) true xs
+isSimpleList _ = false
+
+isList (List x) = true
+isList (Meta _ (List x)) = true
+isList _ = false
 
 simpleStep :: LispVal -> LispVal
 simpleStep (Meta d v) = simpleStep v
-simpleStep (List (Atom "plus" : other_things))  = plusLisp $ List other_things
-simpleStep (List (Atom "minus" : other_things)) = minusLisp $ List other_things
+simpleStep (List (Atom "plus" : other_things))  = foldOverLisp plusLisp2  (Int 0) (List other_things)
+simpleStep (List (Atom "minus" : x : xs))       = foldOverLisp minusLisp2 x (List xs)
 simpleStep _ = String "Can only simple step a simple list.  And only if the function is defined..."
 
+foldOverLisp :: (LispVal -> LispVal -> LispVal) -> LispVal -> LispVal -> LispVal
+foldOverLisp f default (Meta d v)  = foldOverLisp f default v
+foldOverLisp f default (List vals) = foldl f default vals
+foldOverLisp f _ _= Atom "error"
 
 
 plusLisp2 :: LispVal -> LispVal -> LispVal
 plusLisp2 (Meta d1 i1) i2  = plusLisp2 i1 i2
 plusLisp2 i1 (Meta d2 i2)  = plusLisp2 i1 i2
 plusLisp2 (Int i1) (Int i2)  = Int (i1 + i2)
-plusLisp2 _ _                = Int 0
-
-
-plusLisp :: LispVal -> LispVal
-plusLisp (Meta d v)    = plusLisp v
-plusLisp (Int i)       = Int i
-plusLisp (List (x:xs)) = plusLisp2 x $ plusLisp $ List xs
-plusLisp _             = Int 0
-
-
-minusLisp :: LispVal -> LispVal
-minusLisp (Meta d v)    = minusLisp v
-minusLisp (Int i)       = Int i
-minusLisp (List (x:xs)) = minusLisp2 x $ minusLisp $ List xs
-minusLisp _             = Int 0
+plusLisp2 i1 i2              = Atom $ "Error: Couldn't add " <> (show i1) <> "+" <> (show i2)
 
 minusLisp2 ::LispVal -> LispVal -> LispVal
 minusLisp2 (Meta d1 i1) (Meta d2 i2) = minusLisp2 i1 i2
 minusLisp2 (Int i1) (Int i2)         = Int (i1 - i2)
-minusLisp2 _ _                       = Int 0
+minusLisp2 _ _                       = Atom "error"
 
 example2 = parseLisp "(plus 2 (plus 2 4))" 
 example3 = parseLisp "(minus 8 (minus 3 1))"

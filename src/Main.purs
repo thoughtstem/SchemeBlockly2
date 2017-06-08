@@ -55,17 +55,19 @@ type State = {editor:: LispVal, blockly:: LispVal, message:: String, focused:: F
 stepState state = state{editor = stepLispProgram state.editor, blockly = stepLispProgram state.blockly, focused = NoneFocused}
 
 
-reconcileBlockly state val = 
-  case state.focused of
-       NoneFocused -> state {blockly = val, editor = val}
-       BlocklyFocused -> state {editor = val}
-       CodeFocused -> state {blockly = val}
+reconcileBlockly state val = state {blockly = val, editor = val}
 
-reconcileEditor state val = 
-  case state.focused of
-       NoneFocused -> state {blockly = val, editor = val}
-       BlocklyFocused -> state {editor = val}
-       CodeFocused -> state {blockly = val}
+--  case state.focused of
+--       NoneFocused -> state {blockly = val, editor = val}
+--       BlocklyFocused -> state {editor = val}
+--       CodeFocused -> state {blockly = val}
+
+reconcileEditor state val = state {blockly = val, editor = val}
+
+--  case state.focused of
+--       NoneFocused -> state {blockly = val, editor = val}
+--       BlocklyFocused -> state {editor = val}
+--       CodeFocused -> state {blockly = val}
 
 reconciled state = (show state.editor) == (show state.blockly)
 
