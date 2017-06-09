@@ -3,7 +3,7 @@ module TypedLisp where
 import Prelude 
 import Data.List
 
-import Lisp as L
+import SandScript.AST as L
 
 data FunctionDefinition =
   FunctionDefinition String SomeType (List SomeType)
@@ -30,20 +30,18 @@ getFunctionReturnType (FunctionDefinition _ t _) = t
 
 getFunctionName (FunctionDefinition s _ _) = s
 
-toTemplateLisp (FunctionDefinition s output inputs) = 
-  L.List (L.Atom s : shadows) where
-    shadows = L.Meta {block_type: s, shadowness: true, x: 0, y: 0, id: ""} <$> typeToExampleLisp <$> inputs 
+--toTemplateLisp (FunctionDefinition s output inputs) = 
 toTemplateLisp _ = L.Atom "nope"
 
 
-typeToExampleLisp NumberType   = L.Meta {block_type: "math_number", shadowness: true, x: 0, y: 0, id: ""} $ L.Int 0
-typeToExampleLisp StringType   = L.Meta {block_type: "text", shadowness: true, x: 0, y: 0, id: ""} $ L.String "text"
-typeToExampleLisp BooleanType  = L.Meta {block_type: "logic_boolean", shadowness: true, x: 0, y: 0, id: ""} $ L.Bool true
-typeToExampleLisp ImageType    = L.Meta {block_type: "circle", shadowness: true, x: 0, y: 0, id: ""} $ L.List (
+typeToExampleLisp NumberType   = L.Integer 0
+typeToExampleLisp StringType   = L.String "text"
+typeToExampleLisp BooleanType  = L.Bool true
+typeToExampleLisp ImageType    = L.List (
                                     (L.Atom "circle") :
-                                    (L.Meta {block_type: "math_number", shadowness: true, x: 0, y: 0, id: ""} $ L.Int 20) :
-                                    (L.Meta {block_type: "text", shadowness: true, x: 0, y: 0, id: ""} $ L.String "solid") :
-                                    (L.Meta {block_type: "text", shadowness: true, x: 0, y: 0, id: ""} $ L.String "red") :
+                                    (L.Integer 20) :
+                                    (L.String "solid") :
+                                    (L.String "red") :
                                     Nil)
 
 

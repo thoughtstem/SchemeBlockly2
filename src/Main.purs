@@ -23,13 +23,16 @@ import Color.Scale (sample)
 import Color.Scheme.Clrs 
 
 
-import Lisp 
+import SandScript.AST 
+import SandScript.Env as SE
+import SandScript.Parser (stringToWFF)
 import Lisp2BlocklyXML
 import BlocklyXML
 import TypedLisp as TL
 
 import Text.Parsing.Parser
 
+import Data.Tuple
 import Data.Int (toNumber)
 import Data.List 
 import Data.Either
@@ -39,6 +42,7 @@ import Math (sin, cos, pi)
 
 import React 
 
+import SandScript.Eval (primitiveFuncs, runComputations, eval)
 
 
 foreign import editorComponent_ :: forall props. ReactClass props
@@ -67,9 +71,13 @@ instance eqT :: Eq FocusState where
     eq _ _ = false
 
 
-type State = {editor:: LispVal, blockly:: LispVal, message:: String, focused:: FocusState}
+type State = {editor:: WFF, blockly:: WFF, message:: String, focused:: FocusState}
 
-stepState state = state{editor = stepLispProgram state.editor, blockly = stepLispProgram state.blockly, focused = NoneFocused}
+stepState state = state{editor = evalUnsafe state.editor, blockly = evalUnsafe state.blockly, focused = NoneFocused}
+
+evalUnsafe wff = Atom "nope"
+
+
 
 
 reconcileBlockly state val = state {blockly = val, editor = val}
@@ -96,10 +104,9 @@ effects_from_lisp lisp = let the_effect = effect_from_lisp lisp in  --Assume one
                             Just e  -> [e]
                             Nothing -> []
 
-shape_from_lisp (List (Atom "circle" : Int r : String mode : String color : Nil)) = Just $ my_circle r color mode 
-shape_from_lisp (List (Atom "square" : Int s : String mode : String color : Nil)) =  Just $ my_square s color mode
-shape_from_lisp (List (Atom "rectangle" : Int w :  Int h : String mode : String color : Nil)) =  Just $ my_rectangle w h color mode 
-shape_from_lisp (List (Atom "beside" : Int w :  Int h : String mode : String color : Nil)) =  Just $ my_rectangle w h color mode 
+shape_from_lisp (List (Atom "circle" : Integer r : String mode : String color : Nil)) = Just $ my_circle r color mode 
+shape_from_lisp (List (Atom "square" : Integer s : String mode : String color : Nil)) =  Just $ my_square s color mode
+shape_from_lisp (List (Atom "rectangle" : Integer w :  Integer h : String mode : String color : Nil)) =  Just $ my_rectangle w h color mode 
 shape_from_lisp _ = Nothing
 
 effect_from_lisp l = let shape = shape_from_lisp l in
@@ -141,9 +148,7 @@ foldp (BlocklyFocus ev) state =  {state: state {focused = BlocklyFocused}, effec
 
 handleEvent (CodeChange ev) state = 
   do { state: newState, effects: [] }
-     where newState = case (runParser (targetValue ev) parseExpr) of
-            Right parsed -> (reconcileEditor state parsed) { message = state.message <> " /// CodeChangeParsed"}
-            Left err -> state{ message = state.message <> " /// CodeChangeFailedParse(" <> (targetValue ev) <> ")"}
+     where newState = reconcileEditor state $ stringToWFF $ targetValue ev
 
 handleEvent (BlocklyChange ev) state = 
   do { state: newState, effects: [] }
@@ -165,11 +170,6 @@ view state =
     (blocklyComponent {text: show $ lispToBlocklyXML bs, toolboxXML: functionDefinitions, should_update: state.focused /= BlocklyFocused})  #! onChange BlocklyChange #! onFocus BlocklyFocus $ text "HI"
     div #! onClick StepCode $ text "Step"
     canvas ! id "canvas" ! width "1000" ! height "1000" $ text "Canvas?"
-    --div ! id "debugging" $ do
-    div $ text $ lispDebugShow $ es
-    div $ text $ if reconciled state then "MATCH!" else "NO MATCH!"
-    div $ text $ lispDebugShow $ bs
-    --div $ text $ show $ m
     div $ text $ show $ case state.focused of 
                              CodeFocused   -> "Code Focused"
                              BlocklyFocused -> "Blockly Focused"
