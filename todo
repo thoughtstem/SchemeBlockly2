@@ -1,6 +1,32 @@
 Refactor into Purescript
-  > Toy interpreter kind of working.  Won't exec on editor text, though...
+  > Define shape/drawing library for Lisp
+    > The basics are there, but need a crazy refactorign of some sort:
+      > What is the primitive value for a shape?
+      > I don't want to add another primitive to the language -- e.g. another LispVal
+        > I want the language to be extensible.
+           > But I want the basic parsing and interpretation semantics to be implemented in the core Lisp.purs 
+           > But I want the shape functions and primitive values (and how they're rendered?) to be defined in files tha extend the base language...  Do we shove everything into LispVal Strings and parse them later?
+           > Do we add another primitive that can wrap up a record type?
+           > Do we parameterize the LispVal type?
+         
+
+    > Render to canvas when fully evaluated
+    > Impl above and beside
+
     
+
+    > Modularize this lisp libs, later might want to:
+      > ship to unity for execution in voxl
+      > ship to ltm for execution on mc server
+
+  > Support more Scheme (function defs?  Ifs?  Lists....)
+    * Use existing purescript lisp interpreter?
+
+
+
+  > Layout of the page sucks
+    
+
 
   > Working, but typing in ACE is unbearably slow...
     Might be a bit better now.
@@ -22,15 +48,6 @@ Refactor into Purescript
 
 
 
-
-  > Execution and output.  Write interpreter?
-    > Show execution steps, expression simplification
-    > Draw the pretty pictures on a canvas?
-    > Or ship to unity for execution in voxl
-    > Or ship to ltm for execution on mc server
-
-    > Support more Scheme (function defs?  Ifs?  )
-      * Use existing interpreter?
 
 
   > generate new function definitions from code (define ...) -> Infer type, Place in toolbox

@@ -2,23 +2,40 @@ module Main where
 
 import Prelude hiding (div, id)
 import Control.Monad.Eff (Eff, kind Effect)
+import Control.Monad.Eff.Class (liftEff)
+import Control.Monad.Eff.Console (CONSOLE, log)
+import Data.Monoid (mempty)
+
 import Pux (CoreEffects, EffModel, start)
 import Pux.DOM.Events (DOMEvent, onFocus, onChange, onClick, targetValue)
 import Pux.DOM.HTML (HTML)
 import Pux.Renderer.React (renderToDOM, reactClassWithProps)
-import Text.Smolder.HTML (button, div, span, textarea)
-import Text.Smolder.HTML.Attributes (id, style, value)
+import Text.Smolder.HTML (button, div, span, textarea, canvas)
+import Text.Smolder.HTML.Attributes (id, style, value, width, height)
 import Text.Smolder.Markup ((!), text, (#!))
+
+import Partial.Unsafe (unsafePartial)
+
+import Graphics.Canvas 
+import Graphics.Drawing (scale, translate, shadowBlur, black, shadowColor,
+                         shadow, render, rotate, closed, fillColor, outlineColor, filled, outlined, circle, rectangle)
+import Color.Scale (sample)
+import Color.Scheme.Clrs 
+
 
 import Lisp 
 import Lisp2BlocklyXML
 import BlocklyXML
-import TypedLisp 
+import TypedLisp as TL
 
 import Text.Parsing.Parser
 
-import Data.List
+import Data.Int (toNumber)
+import Data.List 
 import Data.Either
+import Data.Maybe
+
+import Math (sin, cos, pi)
 
 import React 
 
@@ -57,23 +74,57 @@ stepState state = state{editor = stepLispProgram state.editor, blockly = stepLis
 
 reconcileBlockly state val = state {blockly = val, editor = val}
 
---  case state.focused of
---       NoneFocused -> state {blockly = val, editor = val}
---       BlocklyFocused -> state {editor = val}
---       CodeFocused -> state {blockly = val}
-
 reconcileEditor state val = state {blockly = val, editor = val}
-
---  case state.focused of
---       NoneFocused -> state {blockly = val, editor = val}
---       BlocklyFocused -> state {editor = val}
---       CodeFocused -> state {blockly = val}
 
 reconciled state = (show state.editor) == (show state.blockly)
 
 
-foldp :: ∀ fx. Event -> State -> EffModel State Event fx
-foldp (StepCode ev) state = do {state: stepState state ,effects: []}
+
+
+
+
+put_on_canvas stuff = liftEff $ unsafePartial do
+                                          Just canvas <- getCanvasElementById "canvas"
+                                          ctx <- getContext2D canvas
+                                          _ <- clearRect ctx {x: 0.0, y: 0.0, w: 1000.0, h: 1000.0}
+                                          _ <- render ctx $ translate 50.0 50.0 $ stuff
+                                          pure Nothing
+
+
+effects_from_lisp lisp = let the_effect = effect_from_lisp lisp in  --Assume one effect per program for now
+                          case the_effect of
+                            Just e  -> [e]
+                            Nothing -> []
+
+shape_from_lisp (List (Atom "circle" : Int r : String mode : String color : Nil)) = Just $ my_circle r color mode 
+shape_from_lisp (List (Atom "square" : Int s : String mode : String color : Nil)) =  Just $ my_square s color mode
+shape_from_lisp (List (Atom "rectangle" : Int w :  Int h : String mode : String color : Nil)) =  Just $ my_rectangle w h color mode 
+shape_from_lisp (List (Atom "beside" : Int w :  Int h : String mode : String color : Nil)) =  Just $ my_rectangle w h color mode 
+shape_from_lisp _ = Nothing
+
+effect_from_lisp l = let shape = shape_from_lisp l in
+                     case shape of
+                       Just s  -> Just $ put_on_canvas $ s
+                       Nothing -> Nothing
+                  
+
+
+my_circle radius color mode = fill_or_outline color mode $ circle 0.0 0.0 $ toNumber radius
+
+my_square size color mode = fill_or_outline color mode $ rectangle 0.0 0.0 (toNumber size) (toNumber size)
+
+my_rectangle w h color mode = fill_or_outline color mode $ rectangle 0.0 0.0 (toNumber w) (toNumber h)
+
+fill_or_outline color "solid" shape   = filled (fillColor $ color_from_string color ) $ shape
+fill_or_outline color "outline" shape = outlined (outlineColor $ color_from_string color ) $ shape
+
+color_from_string "red"   = red
+color_from_string "green" = green
+color_from_string "blue"  = blue
+
+
+foldp (StepCode ev) state = {state: newState, effects: effects_from_lisp state.editor }
+                              where newState = stepState state
 
 foldp (CodeChange ev) state = 
       case (targetValue ev) == "<<undefined>>" of
@@ -113,6 +164,7 @@ view state =
     (editorComponent {text: show es, should_update: state.focused /= CodeFocused})  #! onChange CodeChange #! onFocus CodeFocus $ text "HI"
     (blocklyComponent {text: show $ lispToBlocklyXML bs, toolboxXML: functionDefinitions, should_update: state.focused /= BlocklyFocused})  #! onChange BlocklyChange #! onFocus BlocklyFocus $ text "HI"
     div #! onClick StepCode $ text "Step"
+    canvas ! id "canvas" ! width "1000" ! height "1000" $ text "Canvas?"
     --div ! id "debugging" $ do
     div $ text $ lispDebugShow $ es
     div $ text $ if reconciled state then "MATCH!" else "NO MATCH!"
@@ -125,7 +177,6 @@ view state =
       
 
 
-main :: ∀ fx. Eff (CoreEffects fx) Unit
 main = do
   app <- start
     { initialState: {editor: Atom "x", blockly: Atom "y", message: "No messages...", focused: NoneFocused}
@@ -140,7 +191,7 @@ main = do
 
 -- Accessed by JavaScript 
 
-functionDefinitions = joinS $ show <$> lispToBlockXML <$> toTemplateLisp <$> defaultFunctionDefinitions
+functionDefinitions = joinS $ show <$> lispToBlockXML <$> TL.toTemplateLisp <$> TL.defaultFunctionDefinitions
 
 join Nil     c = ""
 join (x:Nil) c = x

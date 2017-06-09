@@ -30,6 +30,7 @@
   "dependencies": {
     "bower": "^1.7.9",
     "brace": "^0.10.0",
+    "fabric": "^1.7.12",
     "node-blockly": "^1.0.18",
     "preact": "^8.1.0",
     "preact-compat": "^3.16.0",

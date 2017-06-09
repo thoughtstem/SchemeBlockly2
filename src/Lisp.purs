@@ -140,8 +140,8 @@ isList _ = false
 
 simpleStep :: LispVal -> LispVal
 simpleStep (Meta d v) = simpleStep v
-simpleStep (List (Atom "plus" : other_things))  = foldOverLisp plusLisp2  (Int 0) (List other_things)
-simpleStep (List (Atom "minus" : x : xs))       = foldOverLisp minusLisp2 x (List xs)
+simpleStep (List (Atom "plus" : other_things))  = foldOverLisp (liftOverMetas $ plusLisp2)  (Int 0) (List other_things)
+simpleStep (List (Atom "minus" : x : xs))       = foldOverLisp (liftOverMetas $ minusLisp2) x (List xs)
 simpleStep _ = String "Can only simple step a simple list.  And only if the function is defined..."
 
 foldOverLisp :: (LispVal -> LispVal -> LispVal) -> LispVal -> LispVal -> LispVal
@@ -149,15 +149,16 @@ foldOverLisp f default (Meta d v)  = foldOverLisp f default v
 foldOverLisp f default (List vals) = foldl f default vals
 foldOverLisp f _ _= Atom "error"
 
+liftOverMetas :: (LispVal -> LispVal -> LispVal) -> LispVal -> LispVal -> LispVal 
+liftOverMetas f (Meta d1 i1) i2  = liftOverMetas f i1 i2
+liftOverMetas f i1 (Meta d2 i2)  = liftOverMetas f i1 i2
+liftOverMetas f l1 l2 = f l1 l2
 
 plusLisp2 :: LispVal -> LispVal -> LispVal
-plusLisp2 (Meta d1 i1) i2  = plusLisp2 i1 i2
-plusLisp2 i1 (Meta d2 i2)  = plusLisp2 i1 i2
 plusLisp2 (Int i1) (Int i2)  = Int (i1 + i2)
 plusLisp2 i1 i2              = Atom $ "Error: Couldn't add " <> (show i1) <> "+" <> (show i2)
 
 minusLisp2 ::LispVal -> LispVal -> LispVal
-minusLisp2 (Meta d1 i1) (Meta d2 i2) = minusLisp2 i1 i2
 minusLisp2 (Int i1) (Int i2)         = Int (i1 - i2)
 minusLisp2 _ _                       = Atom "error"
 
